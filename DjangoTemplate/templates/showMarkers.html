@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>自适应显示多个点标记</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+        }
+
+
+        .content-window-card p {
+            height: 2rem;
+        }
+
+
+        div.info-top div {
+            display: inline-block;
+            color: #333333;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 31px;
+            padding: 0 10px;
+        }
+
+        div.info-top img {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            transition-duration: 0.25s;
+        }
+
+        div.info-top img:hover {
+            box-shadow: 0px 0px 5px #000;
+        }
+
+        div.info-bottom img {
+            position: relative;
+            z-index: 104;
+        }
+
+        span {
+            margin-left: 5px;
+            font-size: 11px;
+        }
+
+        .info-middle img {
+            float: left;
+            margin-right: 6px;
+        }
+
+        .custom-input-card {
+            width: 20rem;
+        }
+
+        .custom-input-card .btn {
+            margin-right: 1rem;
+        }
+
+        .custom-input-card .btn:last-child {
+            margin-right: 0;
+        }
+
+
+        .info-content img {
+            float: left;
+            margin: 3px;
+        }
+
+        .amap-info-combo .keyword-input {
+            height: 25px;
+            border-radius: 2px 0 0 2px;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+
+</div>
+<div class="input-card custom-input-card">
+
+    <h4>输入要修改的基站ID</h4><input type="text" id="i1">
+    <input type="button" value="提交" id="b1">
+
+    <a href="{% url 'map:showmarker' %}">刷新</a>
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script>
+        $("#b1").on("click", function () {
+            $.ajax({
+                url: "/map/ajax_add/",
+                type: "GET",
+                data: {"i1": $("#i1").val()},
+                success: function (data) {
+                    console.log("send success");
+                }
+            })
+        });
+    </script>
+
+</div>
+
+<script src="https://cache.amap.com/lbs/static/es5.min.js"></script>
+<script type="text/javascript"
+        src="https://webapi.amap.com/maps?v=1.4.15&key=3f2076163a8611a90af38488a1683710"></script>
+<script src="//webapi.amap.com/ui/1.1/main.js?v=1.1.1"></script>
+<script type="text/javascript">
+
+    var map = new AMap.Map('container', {
+        resizeEnable: true,
+        center: [119.668581, 29.097062],
+        zoom: 13
+    });
+
+    var markers = [];
+
+    var lnglats = {{ location }};
+
+    var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
+
+    var redIcon = new AMap.Icon({
+        size: new AMap.Size(22, 40),
+        image: '/static/icon.jpg',
+        imageSize: new AMap.Size(156, 150),
+        imageOffset: new AMap.Pixel(-126, -25)
+    });
+    var greenIcon = new AMap.Icon({
+        size: new AMap.Size(22, 40),
+        image: '/static/icon.jpg',
+        imageSize: new AMap.Size(156, 150),
+        imageOffset: new AMap.Pixel(-126, -82)
+    });
+
+    for (var i = 0, marker; i < lnglats.length; i++) {
+
+        var isopen_List = {{ is_open|safe }};
+        var name_List = {{ name|safe }};
+        var open_time_List = {{ open_time|safe }};
+        var note_List = {{ note|safe }};
+
+        var lnglat = lnglats[i];
+        var marker = new AMap.Marker({
+            id: i,
+            position: new AMap.LngLat(lnglat[0], lnglat[1]),
+            map: map,
+            icon: (isopen_List[i] ? greenIcon : redIcon), {#绿色，营业#}
+            extData: {id: i + 1},
+
+        });
+
+        var open_CN = [];
+
+        marker.content = "<div id=\"marker_content\">" +
+            "<h3>" + name_List[i] + "(" + (i + 1) + ")" + "</h3>\n" +
+            "<id=\"marker_isopen\"><h4>是否营业:" + "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp" + isopen_List[i] + "</h4>\n" +
+            "<id=\"marker_opentime\"><h4>开业时间:" + "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp" + open_time_List[i] + "</h4>\n";
+
+
+        marker.on('click', markerClick);
+    }
+
+
+    function markerClick(e) {
+        infoWindow.setContent(e.target.content);
+        infoWindow.open(map, e.target.getPosition());
+        console.log("点击地点");
+        console.log(e.target.getExtData().id - 1);
+    }
+
+    var overlayGroups = new AMap.OverlayGroup(markers);
+    map.add(overlayGroups);
+
+    map.setFitView();
+</script>
+
+</body>
+</html>
